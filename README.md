@@ -1,3 +1,5 @@
+[![Swagger UI](https://img.shields.io/badge/docs-Swagger%20UI-blue.svg)](http://localhost:8080/swagger/index.html)
+
 ## Multi-Tenant Chat System: Stream, Go, Next.js, Neon Serverless
 
 ![Multi-Tenant Chat App Screenshot](frontend/assets/cover.png)
