@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-
 	"github.com/Tabintel/multi-tenant-chat/backend/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -23,10 +22,15 @@ func Connect() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	DB = db
-	// Auto-migrate models
-	err = db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Channel{})
-	if err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+	// Conditionally run AutoMigrate if MIGRATE_DB=true in env (for development only)
+	if os.Getenv("MIGRATE_DB") == "true" {
+		fmt.Println("[DEV] Running GORM AutoMigrate...")
+		err = db.AutoMigrate(&models.Tenant{}, &models.User{}, &models.Channel{})
+		if err != nil {
+			log.Fatalf("Failed to migrate database: %v", err)
+		}
+		fmt.Println("Database connected and migrated (AutoMigrate enabled)")
+	} else {
+		fmt.Println("Database connected (no migration performed)")
 	}
-	fmt.Println("Database connected and migrated")
 }

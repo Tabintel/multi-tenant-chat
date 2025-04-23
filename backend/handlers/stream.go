@@ -7,6 +7,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// StreamToken issues a Stream Chat token for the authenticated user
+// @Summary Get Stream Chat token
+// @Description Issues a Stream Chat token for the authenticated user
+// @Tags stream
+// @Produce json
+// @Success 200 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /stream/token [get]
 func StreamToken(c *gin.Context) {
 	userID := c.GetString("user_id")
 	token, err := services.CreateStreamToken(userID)

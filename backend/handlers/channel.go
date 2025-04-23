@@ -8,6 +8,17 @@ import (
 )
 
 // CreateChannel creates a new channel (Admin/Moderator only)
+// @Summary Create a channel
+// @Description Creates a new chat channel for the tenant
+// @Tags channels
+// @Accept json
+// @Produce json
+// @Param channel body models.Channel true "Channel info"
+// @Success 201 {object} models.Channel
+// @Failure 400 {object} map[string]string
+// @Failure 403 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /channels [post]
 func CreateChannel(c *gin.Context) {
 	var req struct {
 		Name string `json:"name" binding:"required"`
@@ -31,6 +42,14 @@ func CreateChannel(c *gin.Context) {
 }
 
 // ListChannels lists all channels for a tenant
+// @Summary List channels
+// @Description Lists all chat channels for the tenant
+// @Tags channels
+// @Produce json
+// @Success 200 {array} models.Channel
+// @Failure 500 {object} map[string]string
+// @Security ApiKeyAuth
+// @Router /channels [get]
 func ListChannels(c *gin.Context) {
 	tenantID, _ := c.Get("tenant_id")
 	var channels []models.Channel
