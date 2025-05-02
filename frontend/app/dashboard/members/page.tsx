@@ -32,59 +32,36 @@ export default function MembersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  useEffect(() => {
-    // Fetch members
-    const fetchMembers = async () => {
-      if (!user) return
-
-      try {
-        setIsLoading(true)
-
-        // Try to fetch users from API
-        try {
-          const { users } = await userApi.getUsers()
-          setMembers(
-            users.map((u: any) => ({
-              id: u.id,
-              name: u.name,
-              role: u.role,
-              status: u.last_active_at ? "online" : "offline",
-              lastActive: u.last_active_at ? "Now" : "2 hours ago",
-            })),
-          )
-        } catch (apiError) {
-          console.warn("Error fetching users from API, falling back to Stream:", apiError)
-
-          // Fallback to Stream Chat API
-          const streamUsers = await getTenantUsers(user.tenantId)
-          setMembers(
-            streamUsers.map((u) => ({
-              id: u.id,
-              name: u.name || "Unknown User",
-              role: u.role || "member",
-              status: u.online ? "online" : "offline",
-              lastActive: u.online ? "Now" : "2 hours ago",
-            })),
-          )
+  // Fetch members from backend for real tenants, fallback to mock for demo tenants
+  const fetchMembers = async (tenantId: string, jwt: string) => {
+    try {
+      const res = await fetch(`http://localhost:8080/users`, {
+        headers: {
+          'Authorization': `Bearer ${jwt}`
         }
-      } catch (error) {
-        console.error("Error fetching members:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load members",
-          variant: "destructive",
-        })
-
-        // Use mock members as a last resort
-        const mockMembers = getMockMembers(user.tenantId)
-        setMembers(mockMembers)
-      } finally {
-        setIsLoading(false)
-      }
+      });
+      if (!res.ok) throw new Error('Failed to fetch members');
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      return getMockMembers(tenantId);
     }
+  };
 
-    fetchMembers()
-  }, [user])
+  useEffect(() => {
+    if (!user) return;
+    const jwt = localStorage.getItem('token') || '';
+    const isMock = ["tenant-a", "tenant-b", "tenant-c"].includes(user.tenantId);
+    const loadMembers = async () => {
+      if (isMock) {
+        setMembers(getMockMembers(user.tenantId));
+      } else {
+        const members = await fetchMembers(user.tenantId, jwt);
+        setMembers(members);
+      }
+    };
+    loadMembers();
+  }, [user]);
 
   // Mock members for demo/fallback purposes
   const getMockMembers = (tenantId: string) => {
@@ -306,4 +283,3 @@ function getRoleBadgeVariant(role: string) {
       return "outline"
   }
 }
-

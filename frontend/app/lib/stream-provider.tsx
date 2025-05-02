@@ -1,4 +1,4 @@
-// This file sets up the Stream Chat React SDK provider for your Next.js app.
+// This sets up the Stream Chat React SDK provider for the Multi-tenant chat
 // It ensures that all pages/components can use Stream Chat context and components.
 
 import React, { useEffect, useState } from 'react';
@@ -15,14 +15,33 @@ import { getStreamToken } from './api';
 
 const streamKey = process.env.NEXT_PUBLIC_STREAM_KEY!;
 
+export function useStreamToken() {
+  const [token, setToken] = useState<string|null>(null);
+  useEffect(() => {
+    const fetchToken = async () => {
+      const jwt = localStorage.getItem("token");
+      if (!jwt) return;
+      try {
+        const streamToken = await getStreamToken();
+        setToken(streamToken);
+      } catch (e) {
+        setToken(null);
+      }
+    };
+    fetchToken();
+  }, []);
+  return token;
+}
+
 export function StreamChatProvider({ userId, userName, children }: { userId: string; userName: string; children: React.ReactNode }) {
   const [client, setClient] = useState<StreamChat | null>(null);
   const [loading, setLoading] = useState(true);
+  const token = useStreamToken();
 
   useEffect(() => {
     let chatClient: StreamChat;
     async function connect() {
-      const token = await getStreamToken();
+      if (!token) return;
       chatClient = StreamChat.getInstance(streamKey);
       await chatClient.connectUser({ id: userId, name: userName }, token);
       setClient(chatClient);
@@ -32,7 +51,7 @@ export function StreamChatProvider({ userId, userName, children }: { userId: str
     return () => {
       if (chatClient) chatClient.disconnectUser();
     };
-  }, [userId, userName]);
+  }, [userId, userName, token]);
 
   if (loading || !client) return <div>Loading chat...</div>;
   return <Chat client={client}>{children}</Chat>;

@@ -1,5 +1,6 @@
 import { LoginForm } from "@/components/login-form"
 import { AuthProvider } from "@/contexts/auth-context"
+import Link from "next/link"
 
 export default function Home() {
   return (
@@ -13,9 +14,11 @@ export default function Home() {
             </p>
           </div>
           <LoginForm />
+          <div className="mt-4 text-center text-sm">
+            Don&apos;t have an account? <Link href="/register" className="text-blue-600 hover:underline">Sign up</Link>
+          </div>
         </div>
       </main>
     </AuthProvider>
   )
 }
-

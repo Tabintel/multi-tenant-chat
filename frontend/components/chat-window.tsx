@@ -7,52 +7,53 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Paperclip, Send, User } from "lucide-react"
+import { getMessages, sendMessage } from "@/app/lib/api";
 
 // Mock data for demo purposes
-const MOCK_MESSAGES = {
-  "a-general": [
-    { id: "1", user: "Alice", text: "Hello everyone! Welcome to Tenant A's general channel.", timestamp: "10:30 AM" },
-    { id: "2", user: "Bob", text: "Hi Alice! Thanks for setting this up.", timestamp: "10:32 AM" },
-    { id: "3", user: "Charlie", text: "I'm excited to use this new chat system!", timestamp: "10:35 AM" },
-  ],
-  "a-marketing": [
-    { id: "1", user: "Diana", text: "Let's discuss the new campaign here.", timestamp: "11:00 AM" },
-    { id: "2", user: "Alice", text: "I've prepared some materials, will share soon.", timestamp: "11:05 AM" },
-  ],
-  "a-engineering": [
-    { id: "1", user: "Eve", text: "Any updates on the API integration?", timestamp: "09:45 AM" },
-    { id: "2", user: "Frank", text: "I'm working on it, should be done by EOD.", timestamp: "09:50 AM" },
-    { id: "3", user: "Grace", text: "Let me know if you need any help with testing.", timestamp: "09:55 AM" },
-    { id: "4", user: "Frank", text: "Thanks, will do!", timestamp: "10:00 AM" },
-    { id: "5", user: "Eve", text: "Great, looking forward to it.", timestamp: "10:05 AM" },
-  ],
-  "b-general": [
-    { id: "1", user: "John", text: "Hello team! This is Tenant B's general channel.", timestamp: "09:00 AM" },
-    { id: "2", user: "Kate", text: "Morning John!", timestamp: "09:05 AM" },
-  ],
-  "b-sales": [
-    { id: "1", user: "Liam", text: "Q2 targets are now available in the dashboard.", timestamp: "08:30 AM" },
-    { id: "2", user: "Mia", text: "Thanks Liam, I'll review them today.", timestamp: "08:35 AM" },
-    { id: "3", user: "Noah", text: "Can we discuss the new incentive structure?", timestamp: "08:40 AM" },
-  ],
-  "b-support": [
-    { id: "1", user: "Olivia", text: "New ticket from Acme Corp - priority high.", timestamp: "10:15 AM" },
-    { id: "2", user: "Peter", text: "I'll take it.", timestamp: "10:17 AM" },
-  ],
-  "c-general": [
-    { id: "1", user: "Quinn", text: "Welcome to Tenant C's workspace!", timestamp: "01:00 PM" },
-    { id: "2", user: "Rachel", text: "Thanks Quinn, glad to be here.", timestamp: "01:05 PM" },
-  ],
-  "c-design": [
-    { id: "1", user: "Sam", text: "I've uploaded the new mockups to Figma.", timestamp: "02:30 PM" },
-    { id: "2", user: "Taylor", text: "They look great! Just left some comments.", timestamp: "02:45 PM" },
-  ],
-  "c-product": [
-    { id: "1", user: "Uma", text: "Roadmap planning session tomorrow at 10 AM.", timestamp: "03:00 PM" },
-    { id: "2", user: "Victor", text: "I'll be there.", timestamp: "03:05 PM" },
-    { id: "3", user: "Wendy", text: "Me too, I have some feature requests to discuss.", timestamp: "03:10 PM" },
-  ],
-}
+// const MOCK_MESSAGES = {
+//   "a-general": [
+//     { id: "1", user: "Alice", text: "Hello everyone! Welcome to Tenant A's general channel.", timestamp: "10:30 AM" },
+//     { id: "2", user: "Bob", text: "Hi Alice! Thanks for setting this up.", timestamp: "10:32 AM" },
+//     { id: "3", user: "Charlie", text: "I'm excited to use this new chat system!", timestamp: "10:35 AM" },
+//   ],
+//   "a-marketing": [
+//     { id: "1", user: "Diana", text: "Let's discuss the new campaign here.", timestamp: "11:00 AM" },
+//     { id: "2", user: "Alice", text: "I've prepared some materials, will share soon.", timestamp: "11:05 AM" },
+//   ],
+//   "a-engineering": [
+//     { id: "1", user: "Eve", text: "Any updates on the API integration?", timestamp: "09:45 AM" },
+//     { id: "2", user: "Frank", text: "I'm working on it, should be done by EOD.", timestamp: "09:50 AM" },
+//     { id: "3", user: "Grace", text: "Let me know if you need any help with testing.", timestamp: "09:55 AM" },
+//     { id: "4", user: "Frank", text: "Thanks, will do!", timestamp: "10:00 AM" },
+//     { id: "5", user: "Eve", text: "Great, looking forward to it.", timestamp: "10:05 AM" },
+//   ],
+//   "b-general": [
+//     { id: "1", user: "John", text: "Hello team! This is Tenant B's general channel.", timestamp: "09:00 AM" },
+//     { id: "2", user: "Kate", text: "Morning John!", timestamp: "09:05 AM" },
+//   ],
+//   "b-sales": [
+//     { id: "1", user: "Liam", text: "Q2 targets are now available in the dashboard.", timestamp: "08:30 AM" },
+//     { id: "2", user: "Mia", text: "Thanks Liam, I'll review them today.", timestamp: "08:35 AM" },
+//     { id: "3", user: "Noah", text: "Can we discuss the new incentive structure?", timestamp: "08:40 AM" },
+//   ],
+//   "b-support": [
+//     { id: "1", user: "Olivia", text: "New ticket from Acme Corp - priority high.", timestamp: "10:15 AM" },
+//     { id: "2", user: "Peter", text: "I'll take it.", timestamp: "10:17 AM" },
+//   ],
+//   "c-general": [
+//     { id: "1", user: "Quinn", text: "Welcome to Tenant C's workspace!", timestamp: "01:00 PM" },
+//     { id: "2", user: "Rachel", text: "Thanks Quinn, glad to be here.", timestamp: "01:05 PM" },
+//   ],
+//   "c-design": [
+//     { id: "1", user: "Sam", text: "I've uploaded the new mockups to Figma.", timestamp: "02:30 PM" },
+//     { id: "2", user: "Taylor", text: "They look great! Just left some comments.", timestamp: "02:45 PM" },
+//   ],
+//   "c-product": [
+//     { id: "1", user: "Uma", text: "Roadmap planning session tomorrow at 10 AM.", timestamp: "03:00 PM" },
+//     { id: "2", user: "Victor", text: "I'll be there.", timestamp: "03:05 PM" },
+//     { id: "3", user: "Wendy", text: "Me too, I have some feature requests to discuss.", timestamp: "03:10 PM" },
+//   ],
+// }
 
 interface ChatWindowProps {
   channelId: string
@@ -64,11 +65,24 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
   const [newMessage, setNewMessage] = useState("")
   const [currentUser, setCurrentUser] = useState({ name: "" })
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    // In a real app, you would fetch messages from the Stream API
-    setMessages(MOCK_MESSAGES[channelId as keyof typeof MOCK_MESSAGES] || [])
-
+    // Fetch messages from backend
+    const fetchMessages = async () => {
+      const jwt = localStorage.getItem("token")
+      if (!jwt || !channelId) return
+      try {
+        setLoading(true)
+        const data = await getMessages(channelId, jwt)
+        setMessages(data.messages || [])
+      } catch (e) {
+        setMessages([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchMessages()
     // Get current user
     const userJson = localStorage.getItem("user")
     if (userJson) {
@@ -81,21 +95,20 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!newMessage.trim()) return
-
-    // In a real app, you would send the message to the Stream API
-    const newMsg = {
-      id: Date.now().toString(),
-      user: currentUser.name,
-      text: newMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    const jwt = localStorage.getItem("token")
+    if (!jwt || !channelId) return
+    try {
+      await sendMessage(channelId, newMessage, jwt)
+      setNewMessage("")
+      // Refetch messages
+      const data = await getMessages(channelId, jwt)
+      setMessages(data.messages || [])
+    } catch (e) {
+      // Optionally handle error
     }
-
-    setMessages([...messages, newMsg])
-    setNewMessage("")
   }
 
   return (
@@ -145,4 +158,3 @@ export function ChatWindow({ channelId, channelName }: ChatWindowProps) {
     </div>
   )
 }
-

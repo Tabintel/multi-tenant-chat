@@ -14,6 +14,7 @@ import (
 	"github.com/joho/godotenv"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	swaggerFiles "github.com/swaggo/files"
+	"github.com/gin-contrib/cors"
 )
 
 // @title Multi-Tenant Chat API
@@ -30,20 +31,27 @@ func main() {
 	// Connect to PostgreSQL or use mock mode
 	db.Connect()
 
+	// Configure CORS to allow Authorization header
+	config := cors.DefaultConfig()
+	config.AllowAllOrigins = true
+	config.AllowHeaders = append(config.AllowHeaders, "Authorization")
 	r := gin.Default()
+	r.Use(cors.New(config))
 
 	// Swagger docs endpoint
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Auth endpoints
 	r.POST("/auth/login", handlers.Login)
+	r.POST("/auth/register", handlers.Register)
 
 	// Stream Chat token endpoint (protected)
 	r.GET("/stream/token", middleware.JWTAuth(), handlers.StreamToken)
 
-	// Tenant endpoints (Admin only)
+	// Tenant endpoints
 	r.POST("/tenants", middleware.JWTAuth(), middleware.RequireRole(string(models.RoleAdmin)), handlers.CreateTenant)
-	r.GET("/tenants", middleware.JWTAuth(), middleware.RequireRole(string(models.RoleAdmin)), handlers.ListTenants)
+	// Make GET /tenants public for login/signup dropdown
+	r.GET("/tenants", handlers.ListTenants)
 
 	// User endpoints (Admin/Moderator for create/update, Admin for delete, all roles for list)
 	r.POST("/users", middleware.JWTAuth(), middleware.RequireRole(string(models.RoleAdmin), string(models.RoleModerator)), handlers.CreateUser)
@@ -54,6 +62,10 @@ func main() {
 	// Channel endpoints (Admin/Moderator for create, all roles for list)
 	r.POST("/channels", middleware.JWTAuth(), middleware.RequireRole(string(models.RoleAdmin), string(models.RoleModerator)), handlers.CreateChannel)
 	r.GET("/channels", middleware.JWTAuth(), handlers.ListChannels)
+
+	// Messages endpoint (all authenticated users)
+	r.POST("/messages", middleware.JWTAuth(), handlers.SendMessage)
+	r.GET("/messages/:stream_id", middleware.JWTAuth(), handlers.GetMessages)
 
 	port := os.Getenv("PORT")
 	if port == "" {

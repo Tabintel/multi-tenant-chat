@@ -5,11 +5,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/Tabintel/multi-tenant-chat/backend/db"
 	"github.com/Tabintel/multi-tenant-chat/backend/models"
+	"github.com/Tabintel/multi-tenant-chat/backend/services"
 )
 
 // CreateChannel creates a new channel (Admin/Moderator only)
 // @Summary Create a channel
-// @Description Creates a new chat channel for the tenant
+// @Description Creates a new chat channel for the tenant and Stream
 // @Tags channels
 // @Accept json
 // @Produce json
@@ -21,7 +22,9 @@ import (
 // @Router /channels [post]
 func CreateChannel(c *gin.Context) {
 	var req struct {
-		Name string `json:"name" binding:"required"`
+		Name        string `json:"name" binding:"required"`
+		Description string `json:"description"`
+		CreatedBy   string `json:"createdBy"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
@@ -33,9 +36,28 @@ func CreateChannel(c *gin.Context) {
 		return
 	}
 	tenantID, _ := c.Get("tenant_id")
-	channel := models.Channel{Name: req.Name, TenantID: tenantID.(string)}
+	userID, _ := c.Get("user_id")
+	// Create channel in Stream
+	streamChannelID, err := services.CreateStreamChannel(models.Channel{
+		Name:        req.Name,
+		Description: req.Description,
+		TenantID:    tenantID.(string),
+		CreatedBy:   userID.(string),
+	}, userID.(string))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create Stream channel"})
+		return
+	}
+	// Save channel to DB
+	channel := models.Channel{
+		StreamID:    streamChannelID,
+		Name:        req.Name,
+		Description: req.Description,
+		TenantID:    tenantID.(string),
+		CreatedBy:   userID.(string),
+	}
 	if err := db.DB.Create(&channel).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create channel"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not create channel in DB"})
 		return
 	}
 	c.JSON(http.StatusCreated, channel)

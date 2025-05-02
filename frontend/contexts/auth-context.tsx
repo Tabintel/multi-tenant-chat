@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { login as apiLogin, register as apiRegister } from "@/app/lib/api";
 
 interface User {
   id: string
@@ -12,6 +13,15 @@ interface User {
   tenantName: string
 }
 
+interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  org_name?: string;
+  tenant_id?: string;
+}
+
 interface AuthContextType {
   user: User | null
   token: string | null
@@ -20,6 +30,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   isAuthenticated: boolean
   hasPermission: (permission: string) => boolean
+  register: (data: RegisterData) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -30,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   logout: async () => {},
   isAuthenticated: false,
   hasPermission: () => false,
+  register: async () => {},
 })
 
 export const useAuth = () => useContext(AuthContext)
@@ -108,40 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string, tenantId: string) => {
     try {
       setIsLoading(true)
-
-      // For demo purposes, we'll simulate a successful login
-      // In a real app, you would call your API
-      // const response = await authApi.login(email, password, tenantId);
-
-      const mockUser = {
-        id: `user-${Math.floor(Math.random() * 1000)}`,
-        name: email.split("@")[0],
-        email: email,
-        role: email.includes("admin") ? "admin" : "member",
-        tenantId: tenantId,
-        tenantName: formatTenantName(tenantId),
-      }
-
-      const mockToken = "mock-jwt-token-" + Math.random().toString(36).substring(2)
-
-      // Store token and user data
-      localStorage.setItem("token", mockToken)
-      localStorage.setItem("user", JSON.stringify(mockUser))
-
-      setToken(mockToken)
-      setUser(mockUser)
-
-      // Connect to Stream Chat (commented out for demo)
-      /*
-      await connectUser({
-        id: mockUser.id,
-        name: mockUser.name,
-        role: mockUser.role,
-        tenantId: mockUser.tenantId,
-      });
-      */
-
-      // Redirect to dashboard
+      // Call backend API
+      const res = await apiLogin(email, password)
+      if (!res.token || !res.user) throw new Error('Invalid login response')
+      localStorage.setItem("token", res.token)
+      localStorage.setItem("user", JSON.stringify(res.user))
+      setToken(res.token)
+      setUser(res.user)
       router.push("/dashboard")
     } catch (error) {
       console.error("Login error:", error)
@@ -150,6 +135,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
     }
   }
+
+  const register = async (data: RegisterData) => {
+    const res = await apiRegister(data)
+    // Optionally auto-login after registration:
+    // await login(data.email, data.password, data.tenant_id || "")
+    return res
+  };
 
   const logout = async () => {
     try {
@@ -201,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         isAuthenticated: !!user,
         hasPermission,
+        register,
       }}
     >
       {children}
@@ -212,4 +205,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 function formatTenantName(tenantId: string): string {
   return tenantId.replace("tenant-", "Tenant ").toUpperCase()
 }
-

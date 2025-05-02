@@ -63,7 +63,12 @@ func CreateStreamUser(user models.User) error {
 
 func CreateStreamChannel(channel models.Channel, creatorID string) (string, error) {
 	client := GetStreamClient()
-	channelID := channel.TenantID + "-" + uuid.New().String()
+	// Ensure channelID is <= 64 characters for Stream
+	shortTenantID := channel.TenantID
+	if len(shortTenantID) > 8 {
+		shortTenantID = shortTenantID[:8]
+	}
+	channelID := shortTenantID + "-" + uuid.New().String()
 	ch, err := client.CreateChannel(
 		context.Background(),
 		"messaging",
@@ -79,6 +84,7 @@ func CreateStreamChannel(channel models.Channel, creatorID string) (string, erro
 		},
 	)
 	if err != nil {
+		log.Printf("Stream CreateChannel error: %v", err)
 		return "", err
 	}
 	return ch.Channel.ID, nil // ch is *CreateChannelResponse
@@ -119,4 +125,9 @@ func GetTenantChannels(tenantID string) ([]models.Channel, error) {
 // HashPassword hashes a plaintext password using bcrypt
 func HashPassword(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+}
+
+// CheckPassword compares a plaintext password with a hashed password
+func CheckPassword(plain, hashed string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashed), []byte(plain))
 }
